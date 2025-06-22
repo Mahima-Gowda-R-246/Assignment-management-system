@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Dashboard</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 0; padding: 0; background-color: #f4f4f4; }
+        .header { background-color: #3c4043; color: white; padding: 20px; text-align: center; }
+        .logout { position: absolute; top: 20px; right: 20px; background-color: red; color: white; padding: 10px; border: none; border-radius: 5px; cursor: pointer; }
+        .container { padding: 20px; }
+        .upload-section, .marks-section { margin-bottom: 20px; }
+        .upload-section input { display: block; margin-bottom: 10px; }
+        .view-assignment { display: none; position: relative; }
+        .close-button { position: absolute; top: 10px; right: 10px; background-color: red; color: white; padding: 5px; border: none; border-radius: 50%; cursor: pointer; }
+        iframe, img { max-width: 100%; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { border: 1px solid #ddd; padding: 8px; }
+        th { background-color: #3c4043; color: white; }
+        td { text-align: center; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Student Dashboard</h1>
+        <button class="logout" onclick="logout()">Logout</button>
+    </div>
+    <div class="container">
+        <div class="upload-section">
+            <h2>Add Assignment</h2>
+            <input type="file" id="assignment-file" accept="image/*,application/pdf">
+            <button onclick="uploadAssignment()">Upload</button>
+            <ul class="assignments" id="assignments-list"></ul>
+            <div class="view-assignment" id="view-assignment">
+                <button class="close-button" onclick="closeViewAssignment()">X</button>
+                <h3>View Assignment</h3>
+                <img id="image-viewer" style="display: none;">
+                <iframe id="pdf-viewer" width="100%" height="400px" style="display: none;"></iframe>
+            </div>
+        </div>
+        <div class="marks-section">
+            <h2>Marks</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>File Name</th>
+                        <th>Marks</th>
+                    </tr>
+                </thead>
+                <tbody id="marks-list"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        function logout() {
+            localStorage.removeItem('loggedIn');
+            window.location.href = 'login.html';
+        }
+
+        function uploadAssignment() {
+            const fileInput = document.getElementById('assignment-file');
+            const file = fileInput.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = () => {
+                    let assignments = JSON.parse(localStorage.getItem('assignments')) || [];
+                    assignments.push({
+                        student: 'currentStudent', // Replace this with actual student identifier
+                        fileName: file.name,
+                        fileData: reader.result,
+                        fileType: file.type
+                    });
+                    localStorage.setItem('assignments', JSON.stringify(assignments));
+                    displayAssignments();
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        function displayAssignments() {
+            const assignmentsList = document.getElementById('assignments-list');
+            const assignments = JSON.parse(localStorage.getItem('assignments')) || [];
+
+            assignments.forEach(assignment => {
+                const li = document.createElement('li');
+                li.textContent = assignment.fileName;
+                li.onclick = () => viewAssignment(assignment);
+                assignmentsList.appendChild(li);
+            });
+        }
+
+        function viewAssignment(assignment) {
+            const imageViewer = document.getElementById('image-viewer');
+            const pdfViewer = document.getElementById('pdf-viewer');
+            const viewAssignmentDiv = document.getElementById('view-assignment');
+
+            if (assignment.fileType.startsWith('image/')) {
+                imageViewer.src = assignment.fileData;
+                imageViewer.style.display = 'block';
+                pdfViewer.style.display = 'none';
+            } else if (assignment.fileType === 'application/pdf') {
+                pdfViewer.src = assignment.fileData;
+                pdfViewer.style.display = 'block';
+                imageViewer.style.display = 'none';
+            }
+
+            viewAssignmentDiv.style.display = 'block';
+        }
+
+        function closeViewAssignment() {
+            document.getElementById('view-assignment').style.display = 'none';
+        }
+
+        function displayMarks() {
+            const marksList = document.getElementById('marks-list');
+            const marks = JSON.parse(localStorage.getItem('marks')) || [];
+            marksList.innerHTML = '';
+
+            // Filter marks for the current student
+            const assignments = JSON.parse(localStorage.getItem('assignments')) || [];
+            const assignmentFileNames = assignments.map(a => a.fileName);
+            const studentMarks = marks.filter(mark => assignmentFileNames.includes(mark.fileName));
+
+            studentMarks.forEach(mark => {
+                const tr = document.createElement('tr');
+                const tdFileName = document.createElement('td');
+                const tdMark = document.createElement('td');
+
+                tdFileName.textContent = mark.fileName;
+                tdMark.textContent = mark.mark;
+
+                tr.appendChild(tdFileName);
+                tr.appendChild(tdMark);
+
+                marksList.appendChild(tr);
+            });
+        }
+
+        window.onload = () => {
+            displayAssignments();
+            displayMarks();
+        };
+    </script>
+</body>
+</html>

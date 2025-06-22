@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teacher Dashboard</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 0; padding: 0; background-color: #f4f4f4; }
+        .header { background-color: #3c4043; color: white; padding: 20px; text-align: center; }
+        .logout { position: absolute; top: 20px; right: 20px; background-color: red; color: white; padding: 10px; border: none; border-radius: 5px; cursor: pointer; }
+        .container { padding: 20px; }
+        .assignments-section, .marks-section { margin-bottom: 20px; }
+        .assignments { list-style-type: none; padding: 0; }
+        .assignments li { margin-bottom: 10px; cursor: pointer; }
+        .assignments .delete-button { color: red; cursor: pointer; margin-left: 10px; }
+        .mark-assignment { display: none; position: relative; }
+        .close-button { position: absolute; top: 10px; right: 10px; background-color: red; color: white; padding: 5px; border: none; border-radius: 50%; cursor: pointer; }
+        iframe, img { max-width: 100%; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Teacher Dashboard</h1>
+        <button class="logout" onclick="logout()">Logout</button>
+    </div>
+    <div class="container">
+        <div class="assignments-section">
+            <h2>View Assignments</h2>
+            <ul class="assignments" id="assignments-list"></ul>
+            <div class="mark-assignment" id="mark-assignment">
+                <button class="close-button" onclick="closeMarkAssignment()">X</button>
+                <h3>Mark Assignment</h3>
+                <img id="image-viewer" style="display: none;">
+                <iframe id="pdf-viewer" width="100%" height="400px" style="display: none;"></iframe>
+                <label for="mark">Mark (0-10):</label>
+                <input type="number" id="mark" min="0" max="10">
+                <button onclick="submitMark()">Submit Mark</button>
+            </div>
+        </div>
+        <div class="marks-section">
+            <h2>Marks</h2>
+            <ul id="marks-list"></ul>
+        </div>
+    </div>
+
+    <script>
+        function logout() {
+            localStorage.removeItem('loggedIn');
+            window.location.href = 'login.html';
+        }
+
+        function displayAssignments() {
+            const assignmentsList = document.getElementById('assignments-list');
+            const assignments = JSON.parse(localStorage.getItem('assignments')) || [];
+
+            assignments.forEach(assignment => {
+                const li = document.createElement('li');
+                li.textContent = `${assignment.student} - ${assignment.fileName}`;
+                li.onclick = () => viewAssignment(assignment);
+                const deleteButton = document.createElement('span');
+                deleteButton.textContent = 'Delete';
+                deleteButton.className = 'delete-button';
+                deleteButton.onclick = (e) => {
+                    e.stopPropagation();
+                    deleteAssignment(assignment, li);
+                };
+                li.appendChild(deleteButton);
+                assignmentsList.appendChild(li);
+            });
+        }
+
+        function viewAssignment(assignment) {
+            const imageViewer = document.getElementById('image-viewer');
+            const pdfViewer = document.getElementById('pdf-viewer');
+            const markAssignmentDiv = document.getElementById('mark-assignment');
+
+            if (assignment.fileType.startsWith('image/')) {
+                imageViewer.src = assignment.fileData;
+                imageViewer.style.display = 'block';
+                pdfViewer.style.display = 'none';
+            } else if (assignment.fileType === 'application/pdf') {
+                pdfViewer.src = assignment.fileData;
+                pdfViewer.style.display = 'block';
+                imageViewer.style.display = 'none';
+            }
+
+            markAssignmentDiv.style.display = 'block';
+            document.getElementById('mark-assignment').selectedFileName = assignment.fileName;
+            document.getElementById('mark-assignment').selectedStudent = assignment.student;
+        }
+
+        function closeMarkAssignment() {
+            document.getElementById('mark-assignment').style.display = 'none';
+        }
+
+        function submitMark() {
+            const mark = document.getElementById('mark').value;
+            const selectedFileName = document.getElementById('mark-assignment').selectedFileName;
+            const selectedStudent = document.getElementById('mark-assignment').selectedStudent;
+
+            if (selectedFileName && selectedStudent && mark >= 0 && mark <= 10) {
+                let marks = JSON.parse(localStorage.getItem('marks')) || [];
+                const existingMarkIndex = marks.findIndex(m => m.fileName === selectedFileName && m.student === selectedStudent);
+
+                if (existingMarkIndex > -1) {
+                    marks[existingMarkIndex].mark = mark;
+                } else {
+                    marks.push({ student: selectedStudent, fileName: selectedFileName, mark });
+                }
+
+                localStorage.setItem('marks', JSON.stringify(marks));
+                displayMarks();
+                closeMarkAssignment(); // Hide the mark assignment section
+            } else {
+                alert('Please enter a mark between 0 and 10.');
+            }
+        }
+
+        function displayMarks() {
+            const marksList = document.getElementById('marks-list');
+            const marks = JSON.parse(localStorage.getItem('marks')) || [];
+            marksList.innerHTML = '';
+
+            marks.forEach(mark => {
+                const li = document.createElement('li');
+                li.textContent = `${mark.student} - ${mark.fileName}: ${mark.mark} `;
+                const deleteButton = document.createElement('span');
+                deleteButton.textContent = '   Delete';
+                deleteButton.className = 'delete-button';
+                deleteButton.onclick = () => deleteMark(mark, li);
+                li.appendChild(deleteButton);
+                marksList.appendChild(li);
+            });
+        }
+
+        function deleteAssignment(assignment, listItem) {
+            let assignments = JSON.parse(localStorage.getItem('assignments')) || [];
+            assignments = assignments.filter(a => a.fileName !== assignment.fileName || a.student !== assignment.student);
+            localStorage.setItem('assignments', JSON.stringify(assignments));
+            listItem.remove();
+        }
+
+        function deleteMark(mark, listItem) {
+            let marks = JSON.parse(localStorage.getItem('marks')) || [];
+            marks = marks.filter(m => m.fileName !== mark.fileName || m.student !== mark.student);
+            localStorage.setItem('marks', JSON.stringify(marks));
+            listItem.remove();
+        }
+
+        window.onload = () => {
+            displayAssignments();
+            displayMarks();
+        };
+    </script>
+</body>
+</html>

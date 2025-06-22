@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teacher Dashboard</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 0; padding: 0; background-color: #f4f4f4; }
+        .header { background-color: #3c4043; color: white; padding: 20px; text-align: center; }
+        .container { padding: 20px; max-width: 800px; margin: auto; background-color: white; border-radius: 5px; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); }
+        .file-list { margin-top: 20px; }
+        .file-list h3 { margin-top: 0; }
+        .file-list ul { list-style-type: none; padding: 0; }
+        .file-list ul li { margin-bottom: 10px; }
+        .file-list ul li a { text-decoration: none; color: #3c4043; }
+        .file-list ul li a:hover { text-decoration: underline; }
+        .file-item { padding: 10px; border: 1px solid #ddd; border-radius: 5px; background-color: #fafafa; }
+        .file-item a { font-weight: bold; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Teacher Dashboard</h1>
+    </div>
+    <div class="container">
+        <h2>View Submissions</h2>
+        <form id="subject-form">
+            <label for="subject-select">Select Subject:</label>
+            <select id="subject-select" name="subject">
+                <option value="daa">DAA</option>
+                <option value="maths">MATHS</option>
+                <option value="micro">MICRO</option>
+                <option value="dbms">DBMS</option>
+                <option value="bio">BIO</option>
+            </select>
+            <button type="submit">View Submissions</button>
+        </form>
+        <div class="file-list">
+            <h3>Submitted Assignments</h3>
+            <ul id="file-list"></ul>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('subject-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const subject = document.getElementById('subject-select').value;
+            const fileList = document.getElementById('file-list');
+            fileList.innerHTML = ''; // Clear the list
+            
+            // Load previously submitted files
+            const files = JSON.parse(localStorage.getItem(subject)) || [];
+
+            files.forEach(file => {
+                const listItem = document.createElement('li');
+                listItem.className = 'file-item';
+                const fileLink = document.createElement('a');
+                fileLink.href = file.url;
+                fileLink.textContent = file.name;
+                fileLink.target = '_blank';
+                listItem.appendChild(fileLink);
+                fileList.appendChild(listItem);
+            });
+        });
+    </script>
+</body>
+</html>
